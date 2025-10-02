@@ -1,7 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 
-// Shape returned by backend /api/backend/account
+// Shape returned by backend /api/account
 export interface CurrentUser {
   id: number | string;
   email: string;
@@ -20,12 +20,16 @@ interface Result {
 export async function getCurrentUser(): Promise<Result> {
   const backendUrl =
     process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
-  const cookieHeader = cookies().toString();
+  const cookieStore = await cookies();
+  // Forward all cookies to the backend, just like middleware does
+  const headers: Record<string, string> = {};
+  const cookieHeader = cookieStore.toString();
+  if (cookieHeader) headers.cookie = cookieHeader;
 
   let res: Response | null = null;
   try {
-    res = await fetch(`${backendUrl}/api/backend/account`, {
-      headers: { cookie: cookieHeader },
+    res = await fetch(`${backendUrl}/api/account`, {
+      headers,
       cache: "no-store",
     });
   } catch {

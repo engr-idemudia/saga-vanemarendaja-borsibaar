@@ -6,7 +6,7 @@ const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080
 // Lightweight fetch of account for routing; avoid large bodies.
 async function fetchUser(req: NextRequest) {
   try {
-    const res = await fetch(`${backendUrl}/api/backend/account`, {
+    const res = await fetch(`${backendUrl}/api/account`, {
       headers: { cookie: req.headers.get('cookie') || '' },
       cache: 'no-store',
     });
