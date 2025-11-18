@@ -84,4 +84,72 @@ class BarStationServiceTest {
         when(barStationRepository.findByOrganizationIdAndId(1L, 55L)).thenReturn(Optional.empty());
         assertThrows(NotFoundException.class, () -> barStationService.getStationById(1L, 55L));
     }
+
+    @Test
+    void getAllStations_ReturnsMappedList() {
+        BarStation s1 = BarStation.builder().id(1L).organizationId(1L).name("A").build();
+        BarStation s2 = BarStation.builder().id(2L).organizationId(1L).name("B").build();
+        when(barStationRepository.findByOrganizationId(1L)).thenReturn(List.of(s1, s2));
+        when(barStationMapper.toResponseDtoList(List.of(s1, s2))).thenReturn(List.of(
+                new BarStationResponseDto(1L, 1L, "A", null, true, List.of(), null, null),
+                new BarStationResponseDto(2L, 1L, "B", null, true, List.of(), null, null)
+        ));
+
+        List<BarStationResponseDto> result = barStationService.getAllStations(1L);
+        assertEquals(2, result.size());
+        verify(barStationRepository).findByOrganizationId(1L);
+    }
+
+    @Test
+    void createStation_DefaultsActive_WhenNoUsersProvided() {
+        when(barStationRepository.findByOrganizationId(1L)).thenReturn(List.of());
+        ArgumentCaptor<BarStation> captor = ArgumentCaptor.forClass(BarStation.class);
+        BarStation saved = BarStation.builder().id(3L).organizationId(1L).name("New").isActive(true).build();
+        when(barStationRepository.save(any(BarStation.class))).thenReturn(saved);
+        when(barStationMapper.toResponseDto(saved)).thenReturn(new BarStationResponseDto(3L, 1L, "New", null, true, List.of(), null, null));
+
+        BarStationRequestDto req = new BarStationRequestDto("New", "Desc", null, null);
+        BarStationResponseDto dto = barStationService.createStation(1L, req);
+        assertEquals("New", dto.name());
+        verify(barStationRepository).save(captor.capture());
+        assertTrue(Boolean.TRUE.equals(captor.getValue().getIsActive()));
+    }
+
+    @Test
+    void updateStation_Success_AssignsUsers() {
+        Long orgId = 1L; Long stationId = 10L; UUID uid = UUID.randomUUID();
+        BarStation station = BarStation.builder().id(stationId).organizationId(orgId).name("Old").users(new HashSet<>()).build();
+        when(barStationRepository.findByOrganizationIdAndId(orgId, stationId)).thenReturn(Optional.of(station));
+        when(barStationRepository.findByOrganizationId(orgId)).thenReturn(List.of(station));
+        User user = new User(); user.setId(uid); user.setOrganizationId(orgId); user.setBarStations(new HashSet<>());
+        when(userRepository.findById(uid)).thenReturn(Optional.of(user));
+        when(barStationRepository.save(any(BarStation.class))).thenAnswer(a -> a.getArgument(0));
+        when(barStationMapper.toResponseDto(any())).thenAnswer(a -> new BarStationResponseDto(stationId, orgId, "Upd", null, false, List.of(), null, null));
+
+        BarStationRequestDto req = new BarStationRequestDto("Upd", "D", false, List.of(uid));
+        BarStationResponseDto dto = barStationService.updateStation(orgId, stationId, req);
+        assertEquals("Upd", dto.name());
+        verify(barStationRepository).save(any(BarStation.class));
+    }
+
+    @Test
+    void deleteStation_Success() {
+        BarStation station = BarStation.builder().id(5L).organizationId(1L).name("A").build();
+        when(barStationRepository.findByOrganizationIdAndId(1L, 5L)).thenReturn(Optional.of(station));
+        barStationService.deleteStation(1L, 5L);
+        verify(barStationRepository).delete(station);
+    }
+
+    @Test
+    void getUserStations_ReturnsMapped() {
+        UUID uid = UUID.randomUUID();
+        User user = new User(); user.setId(uid); user.setOrganizationId(1L); user.setBarStations(new HashSet<>());
+        BarStation st = BarStation.builder().id(1L).organizationId(1L).name("A").build();
+        user.getBarStations().add(st);
+        when(userRepository.findById(uid)).thenReturn(Optional.of(user));
+        when(barStationMapper.toResponseDtoList(anyList())).thenReturn(List.of(new BarStationResponseDto(1L, 1L, "A", null, true, List.of(), null, null)));
+
+        List<BarStationResponseDto> res = barStationService.getUserStations(uid, 1L);
+        assertEquals(1, res.size());
+    }
 }

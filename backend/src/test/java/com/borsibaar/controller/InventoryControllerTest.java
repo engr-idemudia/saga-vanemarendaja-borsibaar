@@ -93,6 +93,116 @@ class InventoryControllerTest {
         verify(inventoryService).addStock(any(AddStockRequestDto.class), any(UUID.class), eq(1L));
     }
 
+    @Test
+    void getOrganizationInventory_UsesQueryParams_WhenProvided() throws Exception {
+        when(inventoryService.getByOrganization(99L, 7L)).thenReturn(List.of(
+                new InventoryResponseDto(1L, 99L, 10L, "Cola", BigDecimal.ONE, BigDecimal.TEN, BigDecimal.TEN, null, null, OffsetDateTime.now().toString())
+        ));
+
+        mockMvc.perform(get("/api/inventory").param("organizationId", "99").param("categoryId", "7"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].organizationId").value(99));
+
+        verify(inventoryService).getByOrganization(99L, 7L);
+    }
+
+    @Test
+    void getProductInventory_DelegatesToService() throws Exception {
+        User user = userWithOrg(5L, "USER");
+        setAuth(user);
+        when(inventoryService.getByProductAndOrganization(10L, 5L)).thenReturn(
+                new InventoryResponseDto(1L, 5L, 10L, "Water", BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ONE, null, null, OffsetDateTime.now().toString())
+        );
+
+        mockMvc.perform(get("/api/inventory/product/{productId}", 10L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.productId").value(10));
+
+        verify(inventoryService).getByProductAndOrganization(10L, 5L);
+    }
+
+    @Test
+    void removeStock_ReturnsOk() throws Exception {
+        User user = userWithOrg(2L, "USER");
+        setAuth(user);
+        RemoveStockRequestDto req = new RemoveStockRequestDto(20L, new BigDecimal("3"), "ref1", "note");
+        when(inventoryService.removeStock(any(RemoveStockRequestDto.class), any(UUID.class), eq(2L))).thenReturn(
+                new InventoryResponseDto(2L, 2L, 20L, "Beer", new BigDecimal("7"), new BigDecimal("4.00"), new BigDecimal("3.50"), null, null, OffsetDateTime.now().toString())
+        );
+
+        mockMvc.perform(post("/api/inventory/remove")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.productId").value(20));
+
+        verify(inventoryService).removeStock(any(RemoveStockRequestDto.class), any(UUID.class), eq(2L));
+    }
+
+    @Test
+    void adjustStock_ReturnsOk() throws Exception {
+        User user = userWithOrg(3L, "USER");
+        setAuth(user);
+        AdjustStockRequestDto req = new AdjustStockRequestDto(30L, new BigDecimal("12"), "audit");
+        when(inventoryService.adjustStock(any(AdjustStockRequestDto.class), any(UUID.class), eq(3L))).thenReturn(
+                new InventoryResponseDto(3L, 3L, 30L, "Juice", new BigDecimal("12"), new BigDecimal("2.00"), new BigDecimal("2.00"), null, null, OffsetDateTime.now().toString())
+        );
+
+        mockMvc.perform(post("/api/inventory/adjust")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.quantity").value(12));
+
+        verify(inventoryService).adjustStock(any(AdjustStockRequestDto.class), any(UUID.class), eq(3L));
+    }
+
+    @Test
+    void getTransactionHistory_ReturnsList() throws Exception {
+        User user = userWithOrg(4L, "USER");
+        setAuth(user);
+        when(inventoryService.getTransactionHistory(40L, 4L)).thenReturn(List.of(
+                new InventoryTransactionResponseDto(1L, 99L, "SALE", BigDecimal.ONE.negate(), BigDecimal.TEN, new BigDecimal("9"), BigDecimal.TEN, BigDecimal.TEN, "ref", "n", UUID.randomUUID().toString(), "Alice", "a@b.c", OffsetDateTime.now().toString())
+        ));
+
+        mockMvc.perform(get("/api/inventory/product/{productId}/history", 40L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)));
+
+        verify(inventoryService).getTransactionHistory(40L, 4L);
+    }
+
+    @Test
+    void getUserSalesStats_ReturnsList() throws Exception {
+        User user = userWithOrg(6L, "USER");
+        setAuth(user);
+        when(inventoryService.getUserSalesStats(6L)).thenReturn(List.of(
+                new UserSalesStatsResponseDto(UUID.randomUUID().toString(), "U", "u@x", 2L, new BigDecimal("12.00"), 1L, "S")
+        ));
+
+        mockMvc.perform(get("/api/inventory/sales-stats"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)));
+
+        verify(inventoryService).getUserSalesStats(6L);
+    }
+
+    @Test
+    void getStationSalesStats_ReturnsList() throws Exception {
+        User user = userWithOrg(7L, "USER");
+        setAuth(user);
+        when(inventoryService.getStationSalesStats(7L)).thenReturn(List.of(
+                new StationSalesStatsResponseDto(1L, "Main", 3L, new BigDecimal("30.00"))
+        ));
+
+        mockMvc.perform(get("/api/inventory/station-sales-stats"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)));
+
+        verify(inventoryService).getStationSalesStats(7L);
+    }
+
     private static User userWithOrg(Long orgId, String roleName) {
         Role role = Role.builder().id(1L).name(roleName).build();
         return User.builder()
