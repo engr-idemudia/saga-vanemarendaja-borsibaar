@@ -4,7 +4,8 @@ import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 
 public record ProductRequestDto(
-                @NotBlank(message = "Product name is required") @Size(max = 120, message = "Product name must not exceed 120 characters") String name,
+                @NotBlank(message = "Product name is required") @Size(max = 120, message = "Product name must not exceed 120 characters") 
+                @Pattern(regexp = "^[a-zA-Z0-9 ]+$", message = "Product name can only contain letters, numbers and spaces")String name,
 
                 @Size(max = 1000, message = "Description must not exceed 1000 characters") String description,
 
