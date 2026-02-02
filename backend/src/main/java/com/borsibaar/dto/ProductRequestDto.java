@@ -11,9 +11,9 @@ public record ProductRequestDto(
 
                 @NotNull(message = "Current price is required") @DecimalMin(value = "0.0", inclusive = false, message = "Price must be greater than 0") @Digits(integer = 10, fraction = 2, message = "Current price must have at most 2 decimal places") BigDecimal currentPrice,
 
-                @NotNull(message = "Min price is required") @DecimalMin(value = "0.0", inclusive = false, message = "Min price must be greater than 0") BigDecimal minPrice,
+                @NotNull(message = "Min price is required") @DecimalMin(value = "0.0", inclusive = false, message = "Min price must be greater than 0") @Digits(integer = 10, fraction = 2, message = "Min price must have at most 2 decimal places")BigDecimal minPrice,
 
-                @NotNull(message = "Max price is required") @DecimalMin(value = "0.0", inclusive = false, message = "Max price must be greater than 0") BigDecimal maxPrice,
+                @NotNull(message = "Max price is required") @DecimalMin(value = "0.0", inclusive = false, message = "Max price must be greater than 0") @Digits(integer = 10, fraction = 2, message = "Max price must have at most 2 decimal places")BigDecimal maxPrice,
 
                 @NotNull(message = "Category ID is required") Long categoryId) {
 }
