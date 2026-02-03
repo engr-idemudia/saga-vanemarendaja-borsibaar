@@ -4,15 +4,16 @@ import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 
 public record ProductRequestDto(
-                @NotBlank(message = "Product name is required") @Size(max = 120, message = "Product name must not exceed 120 characters") String name,
+                @NotBlank(message = "Product name is required") @Size(max = 120, message = "Product name must not exceed 120 characters") 
+                @Pattern(regexp = "^[a-zA-Z0-9 ]+$", message = "Product name can only contain letters, numbers and spaces")String name,
 
                 @Size(max = 1000, message = "Description must not exceed 1000 characters") String description,
 
-                @NotNull(message = "Current price is required") @DecimalMin(value = "0.0", inclusive = false, message = "Price must be greater than 0") BigDecimal currentPrice,
+                @NotNull(message = "Current price is required") @DecimalMin(value = "0.0", inclusive = false, message = "Price must be greater than 0") @Digits(integer = 10, fraction = 2, message = "Current price must have at most 2 decimal places") BigDecimal currentPrice,
 
-                @NotNull(message = "Min price is required") @DecimalMin(value = "0.0", inclusive = false, message = "Min price must be greater than 0") BigDecimal minPrice,
+                @NotNull(message = "Min price is required") @DecimalMin(value = "0.0", inclusive = false, message = "Min price must be greater than 0") @Digits(integer = 10, fraction = 2, message = "Min price must have at most 2 decimal places")BigDecimal minPrice,
 
-                @NotNull(message = "Max price is required") @DecimalMin(value = "0.0", inclusive = false, message = "Max price must be greater than 0") BigDecimal maxPrice,
+                @NotNull(message = "Max price is required") @DecimalMin(value = "0.0", inclusive = false, message = "Max price must be greater than 0") @Digits(integer = 10, fraction = 2, message = "Max price must have at most 2 decimal places")BigDecimal maxPrice,
 
                 @NotNull(message = "Category ID is required") Long categoryId) {
 }
